@@ -1,0 +1,10 @@
+{
+  "webapp": {
+    "port": 9001
+  },
+  "db": {
+    "collections": [
+      "requests"
+    ]
+  }
+}

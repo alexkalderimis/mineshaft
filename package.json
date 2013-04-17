@@ -1,0 +1,40 @@
+{
+  "name": "mineshaft",
+  "version": "0.0.0",
+  "dependencies": {
+    "connect": "~2.7.4",
+    "mongojs": "~0.7.4",
+    "q": "~0.9.2",
+    "request": "~2.16.6",
+    "prelude-ls": "~0.6.0",
+    "express": "~3.2.0",
+    "debug": "~0.7.2",
+    "JSONStream": "~0.6.4"
+  },
+  "description": "A mediator between client applications and InterMine backends",
+  "devDependencies": {
+    "LiveScript": "~1.1.1",
+    "grunt": "~0.4.1",
+    "mocha": "~1.8.2",
+    "grunt-contrib-watch": "~0.3.1",
+    "grunt-simple-mocha": "git://github.com/yaymukund/grunt-simple-mocha.git",
+    "grunt-contrib-clean": "~0.4.0",
+    "chai": "~1.5.0",
+    "grunt-cli": "~0.1.7"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/grunt test",
+    "prestart": "./node_modules/.bin/grunt build",
+    "start": "node dist/mineshaft.js"
+  },
+  "engines": {
+    "node": ">=0.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexkalderimis/mineshaft.git"
+  },
+  "author": "Alex Kalderimis<alex@intermine.org>",
+  "license": "LGPL",
+  "readmeFilename": "README.md"
+}
