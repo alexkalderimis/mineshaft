@@ -1,6 +1,7 @@
 {
   "logger": "dev",
   "db": {
-    "dsn": "mongodb://localhost/mineshaft-dev"
+    "dsn": "mongodb://localhost/mineshaft-dev",
+    "clear": false
   }
 }
