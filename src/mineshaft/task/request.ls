@@ -1,47 +1,41 @@
-require! {debug, request, object-id: mongojs.ObjectId}
+require! {
+    debug,
+    request,
+    object-id: mongojs.ObjectId,
+    Daemon: './daemon'
+}
 
 log = debug \mineshaft/task/request
 
-module.exports = class RequestDaemon
+module.exports = class RequestDaemon extends Daemon
 
-    (@db) ->
+    ({@events, @db}) ->
 
-    paused: false
-    backoff: 1000ms
-    max-backoff: 60sec * 1000ms
-    min-backoff: 1000ms
-
-    pause: -> @paused = true
-
-    run: ->
-        @paused = false
-        searching = @db.requests.find( state: \PENDING )
-            ..on \error, @~pause
-            ..on \data, @~handle
-            ..on \end, @~recur
-
-    recur: ->
-        return if @paused
-        back-off = @backoff
-        log 'Recurring in %d ms', back-off
-        @backoff = Math.min @max-backoff, back-off * 2
-        setTimeout @~run, back-off
+    search: -> @db.requests.find( state: \PENDING )
 
     handle: (options) ->
         @backoff = @min-backoff
         {responses, requests} = @db
+        events = @events
         options.headers.Accepts ?= 'application/json'
+        if options.headers.Accepts == /json/
+            options.json = true
         log 'options: %j', options
         req = _id: options._id
 
         requests.update req, {$set: {state: \RUNNING}}
 
         request options, (err, resp, body) ->
-            if err?
-                responses.save {err: err.to-string!, request: options._id}
+            doc = request: options._id, created: new Date()
+            if err? or resp.status-code >= 400
+                msg =
+                    | err? => err.to-string!
+                    | otherwise => resp.status-code
+                responses.save doc <<< err: msg
                 requests.update req, {$set: {state: \FAILED}}
             else
-                responses.save {body, request: options._id}, (err) ->
+                responses.save doc <<< {body}, (err, saved) ->
+                    events.emit \saved:response, saved
                     to-set =
                         | err?      => state: \PENDING
                         | otherwise => state: \COMPLETE

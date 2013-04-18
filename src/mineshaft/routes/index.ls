@@ -1,1 +1,1 @@
-module.exports = (conf, db, req, res) --> res.send "Hey there from #{ conf.environment }"
+module.exports = ({conf}, req, res) --> res.send "Hey there from #{ conf.environment }"

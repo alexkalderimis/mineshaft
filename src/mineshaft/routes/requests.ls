@@ -7,14 +7,14 @@ require! {
 
 log = debug \mineshaft/routes/requests
 
-exports.get = (conf, db, req, res) --> 
+exports.get = ({db}, req, res) --> 
     res.type \json
     searching = db.requests.find!
         ..on \error, handle!
         ..pipe(JSONStream.stringify!).pipe res
         ..on \end, res~end
 
-exports.post = (conf, db, req, res) -->
+exports.post = ({db}, req, res) -->
     doc = Request req.body
     log 'Doc: %j', doc
     db.requests.save doc, handle ->

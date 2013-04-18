@@ -7,14 +7,14 @@ require! {
 
 log = debug \mineshaft/routes/responses
 
-exports.get = (conf, db, req, res) -->
+exports.get = ({db}, req, res) -->
     res.type = \json
     searching = db.responses.find!
         ..on \error, handle!
         ..pipe(JSONStream.stringify!).pipe res
         ..on \end, res~end
 
-exports.by-id = (conf, db, req, res) -->
+exports.by-id = ({db}, req, res) -->
     request = object-id req.params.id
     searching = db.responses.find {request}
         ..on \error, handle!
