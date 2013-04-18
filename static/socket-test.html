@@ -1,0 +1,41 @@
+<html>
+    <head></head>
+    <body>
+        <h2>Responses since opening</h2>
+        <ol id="responses">
+        </ol>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var socket, since, ul, getMore;
+
+            // init.
+            socket = io.connect();
+            list = document.querySelector('#responses');
+            since = Date();
+
+            socket.on('responses:get', function(response) {
+                var item = document.createElement('li');
+                if (response.created > since) {
+                    item.className = 'added'
+                }
+                var at = response.created;
+                if (response.body && response.body.results) {
+                    item.innerHTML = at + ' - Results: ' + response.body.results.length;
+                } else {
+                    item.innerHTML = at + ' - ERROR ' + response.error;
+                }
+                list.appendChild(item);
+            });
+
+            // Let's go!
+            socket.emit('responses', 0);
+
+        </script>
+        <style type="text/css">
+            li.added {
+                border: 1px solid red;
+            }
+        </style>
+    </body>
+</html>
