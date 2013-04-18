@@ -4,15 +4,14 @@ log = debug \mineshaft/task/request
 
 module.exports = class RequestDaemon
 
-    paused: false
-
     (@db) ->
 
-    pause: -> @paused = true
-
+    paused: false
     backoff: 1000ms
     max-backoff: 60sec * 1000ms
     min-backoff: 1000ms
+
+    pause: -> @paused = true
 
     run: ->
         @paused = false
