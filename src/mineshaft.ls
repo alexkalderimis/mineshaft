@@ -10,13 +10,30 @@ require! {
     RequestDaemon: './mineshaft/task/request'
 }
 
+module.exports = build-app
+
 debug = log-factory \mineshaft
 
-Q.all([configure!, connect!])
-    .then build-app
-    .done!
+launch! unless module.parent
 
-function build-app [conf, db]
+function launch then build-app!.then (app) ->
+    app.listen app.port
+    debug 'Listening on port %s', app.port
+
+function build-app then Q.all([configure!, connect!]).then _build-app
+
+function _build-app [conf, db]
+    debug """\n
+    _________________________________________________   __
+    |  \\/  (_)               | |          / _| |     |.|
+    | .  . |_ _ __   ___  ___| |__   __ _| |_| |_    |.|
+    | |\\/| | | '_ \\ / _ \\/ __| '_ \\ / _` |  _| __|   |.|
+    | |  | | | | | |  __/\\__ \\ | | | (_| | | | |_    |x|
+    \\_|  |_/_|_| |_|\\___||___/_| |_|\\__,_|_|  \\__|   |.|
+    _________________________________________________|.|  
+    Digging a #{ conf.environment } mineshaft...
+    """
+
     app = express!
         ..events = new EventEmitter()
         ..conf = conf
@@ -42,8 +59,7 @@ function build-app [conf, db]
     daemon = new RequestDaemon app
         ..run!
 
-    port = conf.webapp.port
+    app.port = conf.webapp.port
 
-    app.listen port
-    debug 'Listening on port %s', port
+    return app
 
