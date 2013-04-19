@@ -14,14 +14,15 @@ exports.get = ({db}, req, res) -->
         ..pipe(JSONStream.stringify!).pipe res
         ..on \end, res~end
 
-exports.post = ({db}, req, res) -->
+exports.post = ({events, db}, req, res) -->
     doc = Request req.body
     log 'Doc: %j', doc
-    db.requests.save doc, handle ->
-        db.requests.find doc, handle (docs) ->
-          location = '/requests/' + docs[0]._id
-          res
+    db.requests.save doc, handle ({_id}:saved) ->
+        events.emit \requests:saved, saved
+        location = '/requests/' + _id
+        res
             ..status-code = 201
             ..set-header \Location, location
-            ..send accepted: true, location: location
+            ..send {location}
+
 

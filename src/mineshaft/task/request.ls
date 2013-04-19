@@ -7,11 +7,12 @@ require! {
 
 log = debug \mineshaft/task/request
 
-module.exports = class RequestDaemon extends Daemon
+module.exports = class RequestDaemon
 
     ({@events, @db}) ->
 
-    search: -> @db.requests.find( state: \PENDING )
+    run: ->
+        @events.on \requests:saved, @~handle
 
     handle: (options) ->
         @backoff = @min-backoff
@@ -28,7 +29,9 @@ module.exports = class RequestDaemon extends Daemon
         request options, (err, resp, body) ->
             doc = request: options._id, created: new Date()
             if err? or resp.status-code >= 400
+                log body
                 msg =
+                    | body?.error => body.error
                     | err? => err.to-string!
                     | otherwise => resp.status-code
                 responses.save doc <<< err: msg
