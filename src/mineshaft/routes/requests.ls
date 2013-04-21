@@ -2,22 +2,22 @@ require! {
     debug,
     JSONStream,
     handle: './error',
-    Request: './../model/request'
+    to-request: './../model/request'
 }
 
 log = debug \mineshaft/routes/requests
 
-exports.get = ({db}, req, res) --> 
+exports.get = ({db}, req, res) -->
     res.type \json
-    searching = db.requests.find!
+    searching = db.Request.find().stream!
         ..on \error, handle!
         ..pipe(JSONStream.stringify!).pipe res
         ..on \end, res~end
 
-exports.post = ({events, db}, req, res) -->
-    doc = Request req.body
+exports.post = ({events, db: {Request}}, req, res) -->
+    doc = new Request to-request req.body
     log 'Doc: %j', doc
-    db.requests.save doc, handle ({_id}:saved) ->
+    doc.save handle ({_id}:saved) ->
         events.emit \requests:saved, saved
         location = '/requests/' + _id
         res
