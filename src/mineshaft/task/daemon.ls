@@ -18,7 +18,7 @@ module.exports = class Daemon
             ..on \data, @~dispatch
             ..on \end, @~recur
 
-    dispatch: (obj) -> process.next-tick ~> @handle obj
+    dispatch: -> process.next-tick @handle.bind @, it
 
     recur: ->
         return if @paused
