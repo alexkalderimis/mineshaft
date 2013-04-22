@@ -38,6 +38,7 @@ function _build-app [conf, db]
         ..events = new EventEmitter()
         ..conf = conf
         ..db = db
+        ..clear-db = -> [coll.remove!exec! for coll of db]
         ..use express.logger conf.logger
         ..use express.bodyParser!
         ..use express.static __dirname + '/../static'
@@ -50,10 +51,7 @@ function _build-app [conf, db]
     for [event, handlers] in sockets
         app.io.route event, handlers app
 
-    if conf.db.clear
-        for coll in conf.db.collections
-            debug "Clearing #{ coll }"
-            db[coll].remove!
+    app.clear-db! if conf.db.clear
 
     # Start an interleaved set of requests, checking the request queue.
     daemon = new RequestDaemon app
