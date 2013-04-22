@@ -7,41 +7,50 @@ require! {
 
 log = debug \mineshaft/task/request
 
-module.exports = class RequestDaemon
+best-error = (err, resp, body) ->
+    | body?.error => body.error
+    | err?        => "#{err.to-string!}: #{ err.stack }"
+    | otherwise   => resp.status-code
+
+succeeded = (err, resp, body) -> not err? and resp?.status-code < 400
+
+module.exports = class RequestDaemon extends Daemon
 
     ({@events, @db}) ->
 
     run: ->
-        @events.on \requests:saved, @~handle
+        @events.on \requests:saved, @~dispatch
 
-    handle: (options) ->
+    handle: (req) ->
         @backoff = @min-backoff
-        {responses, requests} = @db
+        {Response, Request} = @db
         events = @events
-        options.headers.Accepts ?= 'application/json'
-        if options.headers.Accepts == /json/
-            options.json = true
-        log 'options: %j', options
-        req = _id: options._id
 
-        requests.update req, {$set: {state: \RUNNING}}
+        req.state = \RUNNING
+        req.save!
+
+        options = req.to-request-opts!
+        accepts = options.headers.Accepts ?= 'application/json'
+        options.json = true if accepts == /json/
+
+        log 'options: %j', options
 
         request options, (err, resp, body) ->
-            doc = request: options._id, created: new Date()
-            if err? or resp.status-code >= 400
-                log body
-                msg =
-                    | body?.error => body.error
-                    | err? => err.to-string!
-                    | otherwise => resp.status-code
-                responses.save doc <<< err: msg
-                requests.update req, {$set: {state: \FAILED}}
-            else
-                responses.save doc <<< {body}, (err, saved) ->
-                    events.emit \saved:response, saved
-                    to-set =
-                        | err?      => state: \PENDING
-                        | otherwise => state: \COMPLETE
-                    log err if err?
-                    requests.update req, {$set: to-set}
+            response = new Response {
+                request: req._id
+                status-code: resp.status-code
+                created: new Date()
+            }
+            [state, props] =
+                | succeeded ... => [ \COMPLETE, {body} ]
+                | otherwise     => [ \FAILED,   {err: best-error ...}]
+
+            response <<< props
+
+            response.save (err, saved) ->
+                log "Error saving response: %s", err if err?
+                events.emit \saved:response, saved if saved?
+                req.state = if err? then \PENDING else state
+                log "New state is %s", state
+                req.save!
 

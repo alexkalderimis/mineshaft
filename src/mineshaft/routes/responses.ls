@@ -2,21 +2,21 @@ require! {
     debug,
     JSONStream,
     handle: './error',
-    object-id: mongojs.ObjectId
+    to-oid: mongoose.Types.ObjectId.fromString
 }
 
 log = debug \mineshaft/routes/responses
 
-exports.get = ({db}, req, res) -->
+exports.get = ({db: {Response}}, req, res) -->
     res.type = \json
-    searching = db.responses.find!
+    stream = Response.find!stream!
         ..on \error, handle!
         ..pipe(JSONStream.stringify!).pipe res
         ..on \end, res~end
 
-exports.by-id = ({db}, req, res) -->
-    request = object-id req.params.id
-    searching = db.responses.find {request}
+exports.by-id = ({db: {Response}}, req, res) -->
+    query = request: to-oid req.params.id
+    stream = Response.find(query).stream!
         ..on \error, handle!
         ..on \data, res~send
         ..on \end, res~end
