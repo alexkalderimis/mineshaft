@@ -3,8 +3,12 @@
     "port": 9001
   },
   "db": {
+    "adminUser": "admin",
     "collections": [
       "requests", "responses"
     ]
+  },
+  "cookie": {
+    "secret": "k3y8øæ¶d-¢aŧ"
   }
 }
