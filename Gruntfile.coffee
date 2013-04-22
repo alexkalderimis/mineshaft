@@ -1,6 +1,7 @@
 module.exports = (g) ->
     
   Q = require 'q'
+  request = require 'request'
 
   g.loadNpmTasks('grunt-contrib-watch')
   g.loadNpmTasks('grunt-simple-mocha')
@@ -8,7 +9,60 @@ module.exports = (g) ->
 
   log = g.log.writeln
 
+  log "Running under #{ g.version }"
+
   g.registerTask 'default', ['clean', 'build', 'close', 'run']
+
+  g.registerTask 'steps', 'Checkout a version of steps', ->
+    g.config.requires('steps.uri', 'steps.dest')
+
+    uri = g.config.get 'steps.uri'
+    dest = g.config.get 'steps.dest'
+
+    done = @async()
+
+    if g.file.exists dest
+      log "Deleting old #{ dest }"
+      g.file.delete dest
+    
+    log "Making #{ dest }"
+    g.file.mkdir dest
+
+    log "Cloning #{ uri } --> #{ dest }"
+    g.util.spawn {cmd: 'git', args: ['clone', uri, dest]}, done
+
+  g.registerTask 'load-tools', 'Get the latest tool definitions', (environment) ->
+    @requiresConfig 'tools.src', 'tools.model', 'tools.method', 'tools.primaryKey'
+    @requires 'build', 'steps'
+    throw new Error("environment argument is required") unless environment
+
+    {src, model, method, primaryKey} = g.config('tools')
+    opts = {upsert: true}
+
+    tools = require src
+
+    log "Found #{ tools.length } tools"
+
+    done = this.async()
+
+    toQuery = (conf) -> (x) ->
+      q = {}
+      q[primaryKey] = x[primaryKey]
+      q.$or = [{user: {$exists: false}}, {user: conf.db.adminUser}]
+      return q
+
+    addUser = (conf) -> (x) ->
+      x.user = conf.db.adminUser
+      x
+
+    n = 0
+    connect = require('./build/mineshaft/db')
+    configure = require('./build/mineshaft/config')
+    Q.all([connect(environment), configure(environment)])
+      .then( ([db, conf]) -> [db[model], toQuery(conf), addUser(conf)])
+      .then( ([C, toQ, addU]) ->  ( C[method](toQ(t), addU(t), opts).exec() for t in tools ) )
+      .then( (promises) -> log "Loading tools"; Q.all(promises) )
+      .then((-> done()), done)
 
   g.registerMultiTask 'build', 'compile livescripts', ->
     done = @async()
@@ -75,7 +129,7 @@ module.exports = (g) ->
   process.on 'SIGINT', ->
     log "\nCaught ^C - cleaning up"
     close?()
-    process.exit();
+    process.exit()
 
   g.initConfig
     clean: ['build', 'dist']
@@ -95,5 +149,13 @@ module.exports = (g) ->
         reporter: 'spec'
       all:
         src: 'build/test/mineshaft/*.js'
+    steps:
+      uri: 'git://github.com/intermine/intermine-steps.git'
+      dest: 'steps'
+    tools:
+      src: './steps/app/tools/Registry'
+      model: 'Tool'
+      method: 'findOneAndUpdate'
+      primaryKey: 'slug'
 
 
