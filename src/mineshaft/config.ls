@@ -27,4 +27,4 @@ function load-config env = ( process.env.ENVIRONMENT or \development )
 
     Q.all [defaults, reading-main-conf, reading-specific-conf]
      .then merge
-    
+
