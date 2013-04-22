@@ -25,6 +25,6 @@ do-connect = ->
     db.on \open, deferred~resolve
     return deferred.promise
 
-connect = -> config!get(\db).then(do-connect).then(build-models)
+connect = -> config(it).get(\db).then(do-connect).then(build-models)
 
 module.exports = connect

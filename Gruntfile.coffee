@@ -1,5 +1,7 @@
 module.exports = (g) ->
     
+  Q = require 'q'
+
   g.loadNpmTasks('grunt-contrib-watch')
   g.loadNpmTasks('grunt-simple-mocha')
   g.loadNpmTasks('grunt-contrib-clean')
@@ -43,6 +45,7 @@ module.exports = (g) ->
     log "Launching #{ environment } server"
     if environment?
       process.env.ENVIRONMENT = environment
+    process.env.DEBUG ?= 'mineshaft*'
     mineshaft = require './build/mineshaft'
     mineshaft().fail(done).then (app) ->
       server = app.listen app.port
@@ -51,6 +54,16 @@ module.exports = (g) ->
         log "Closing #{ environment } server"
         server.close()
         done?()
+
+  g.registerTask 'clear-db', 'Clear the db', (environment) ->
+    g.task.requires 'build'
+    done = this.async()
+    return done(new Error("environment argument is required")) unless environment
+    connect = require('./build/mineshaft/db')
+    connect(environment)
+      .then( (db) -> Q.all(Q.ninvoke coll, 'remove', {} for _, coll of db) )
+      .fail(done)
+      .then(-> done)
 
   g.registerTask 'run', 'Run the server', (environment) ->
     launchServer environment, this.async()
