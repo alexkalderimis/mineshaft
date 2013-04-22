@@ -16,6 +16,8 @@ module.exports = (mongoose) ->
 
     schema.methods.update-state = (state, cb) -> @update {$set: {state}}, cb
 
+    schema.post \save, (doc) -> @db.model(\Request).emit \created, this if doc.state is \PENDING
+
     return schema
 
 module.exports.model-name = \Request

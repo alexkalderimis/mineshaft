@@ -19,11 +19,14 @@ module.exports = class RequestDaemon extends Daemon
     ({@events, @db}) ->
 
     run: ->
-        @events.on \requests:saved, @~dispatch
+        @db.Request.on \created, @~dispatch
+        @db.Request.find(state: \PENDING).stream!
+            .on \error, log
+            .on \data, @~dispatch
 
     handle: (req) ->
         @backoff = @min-backoff
-        {Response, Request} = @db
+        {Response} = @db
         events = @events
 
         req.state = \RUNNING
@@ -33,7 +36,7 @@ module.exports = class RequestDaemon extends Daemon
         accepts = options.headers.Accepts ?= 'application/json'
         options.json = true if accepts == /json/
 
-        log 'options: %j', options
+        log 'request(%j)', options
 
         request options, (err, resp, body) ->
             response = new Response {
@@ -47,10 +50,8 @@ module.exports = class RequestDaemon extends Daemon
 
             response <<< props
 
-            response.save (err, saved) ->
+            response.save (err) ->
                 log "Error saving response: %s", err if err?
-                events.emit \saved:response, saved if saved?
                 req.state = if err? then \PENDING else state
-                log "New state is %s", state
                 req.save!
 
