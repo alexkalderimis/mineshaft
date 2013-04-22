@@ -4,17 +4,19 @@ require! {
     mongo: mongoose,
     config: './config',
     request: './db/request',
-    response: './db/response'
+    response: './db/response',
+    tool: './db/tool',
+    user: './db/user'
 }
 
 log = debug \mineshaft/db
 
-schemata = [request, response]
+schema-facs = [request, response, tool, user]
 
 build-models = ->
-    log "Building models: #{ map (.model-name), schemata }"
-    schemata |> map -> [it.model-name, mongo.model it.model-name, it mongo]
-             |> listToObj
+    log "Building models: #{ map (.model-name), schema-facs }"
+    schema-facs |> map -> [it.model-name, mongo.model it.model-name, it mongo]
+                |> listToObj
 
 do-connect = ->
     log "Connecting to #{ it.dsn }"
