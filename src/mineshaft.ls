@@ -40,7 +40,10 @@ function _build-app [conf, db]
         ..db = db
         ..clear-db = -> [coll.remove!exec! for coll of db]
         ..use express.logger conf.logger
+        ..use express.compress!
         ..use express.bodyParser!
+        ..use express.cookieParser conf.cookie.secret
+        ..use express.cookieSession {secret: conf.cookie.secret}
         ..use express.static __dirname + '/../static'
         ..use '/socket.io', express.static __dirname + '/../node_modules/socket.io/lib'
         ..http!io!
